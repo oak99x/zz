@@ -1,152 +1,147 @@
+ghost function toSet(s:seq<int>):set<int>{
+  set x | x in s
+}
+
+ghost function seqSet(nums:seq<int>, index: nat):set<int>{
+  set x | 0 <= x < index <|nums| :: nums[x]
+}
+
+
 class Set {
-  var elements: array<int>;
-  ghost var abstractSet: set<int>; // Representação abstrata do conjunto
+  var elements: array<int>
+  var cont: nat
+  ghost var conteudo: seq<int>
 
-  constructor() {
-      elements := new int[0];
-      abstractSet := {};
+  constructor()
+    ensures toSet(conteudo) == {}
+  {
+    elements := new int[0];
+    cont := 0;
+    conteudo := [];
   }
-
-// Essa invariante define uma relação entre a representação abstrata `abstractSet` do conjunto e os elementos armazenados no array `elements`. 
-// Em partes:
-// 1. `abstractSet` é a representação abstrata do conjunto
-//     - Essa é a representação do conjunto que queremos manter consistente. 
-//     - É o que a classe `Sett` deve representar como um conjunto de inteiros.
-// 2. `{i: int | ...}` é uma notação usada para denotar um conjunto de elementos `i` que satisfazem uma determinada condição. 
-//     - Neste caso, estamos criando um conjunto de inteiros `i`, que serão os elementos no conjunto representado por `abstractSet`.
-// 3. `exists (j: int :: 0 <= j < elements.Length && elements[j] == i)` é a condição que cada elemento `i` no conjunto `abstractSet` deve satisfazer. 
-//     - Isso significa que para cada `i` no conjunto `abstractSet`, deve existir um índice `j` no array `elements` tal que:
-//     - `0 <= j < elements.Length`: O índice `j` deve estar dentro dos limites do array `elements`.
-//     - `elements[j] == i`: O elemento no índice `j` do array `elements` deve ser igual a `i`.
-  // predicate SetInvariant() {
-  //   // Invariante para a representação abstrata associada à coleção do tipo conjunto.
-  //   abstractSet == {i: int | exists (j: int :: 0 <= j < elements.Length && elements[j] == i)}; //erro diz que falta uma "}"
-  // }
 
   ghost predicate SetInvariant()
     reads this, elements
   {
-    // Garante que não há elementos duplicados no conjunto
-    forall i, j :: 0 <= i < elements.Length && 0 <= j < elements.Length && i != j ==> elements[i] != elements[j]
-    && elements[..elements.Length] == elements
+    elements.Length != 0
+    && cont <= elements.Length
+    && (forall i, j :: 0 <= i < j < cont ==> elements[i] != elements[j])
+    && elements[..cont] == conteudo
   }
 
-  method Add(element: int) returns (added: bool)
-    modifies elements
+  method AddElement(x: int) returns (added: bool)
+    modifies this, elements
+    requires SetInvariant()
     ensures SetInvariant()
+    //true se não estava no consunto, false se já estava
+    ensures added <==> x !in toSet(old(conteudo))
+    //se true, então add "x" ao conjunto (garantindo que os outros elementos não foram perdidos)
+    ensures added ==> toSet(old(conteudo)) + {x} == toSet(conteudo)
+    //se false, então o conjunto não alterou
+    ensures !added ==> toSet(old(conteudo)) == toSet(conteudo)
   {
-    var index := 0;
-    while (index < elements.Length)
-      invariant 0 <= index <= elements.Length
-      invariant SetInvariant()
-    {
-      if (elements[index] == element) {
-        added := false;
-        return;
-      }
-      index := index + 1;
-    }
-    var newElements := new int[elements.Length + 1];
-    newElements[newElements.Length - 1] := element;
-    elements := newElements;
+    var i := 0;
     added := true;
+    while i < cont
+      invariant 0 <= i <= cont
+      invariant SetInvariant()
+    {
+      if elements[i] == x {
+        added := false;
+        break;
+      }
+      i := i + 1;
+    }
+    if added {
+      // Se fizer essa adição em elements o erro SetInvariant() acima possivelmente suma
+      //--------------------------------------------------------------------------------------
+      //elements := elements + [x];
+      var newArr := new int[cont + 1];
+      
+      var index := 0;
+      while index < cont
+        invariant 0 <= index <= cont
+      {
+        newArr[index] := elements[index];
+        index := index + 1;
+      }
+
+      newArr[cont] := x;
+      elements := newArr;
+      //--------------------------------------------------------------------------------------
+      cont := cont + 1;
+      conteudo := conteudo + [x];
+    }
   }
 
-  // method Remove(element: int) returns (removed: bool)
-  //   ensures SetInvariant()
-  // {
-  //   var index := 0;
-  //   while (index < elements.Length)
-  //     invariant 0 <= index <= elements.Length
-  //     invariant SetInvariant()
+
+  // method RemoveElement(x: int) returns (removed: bool)
+  //     requires SetInvariant()
+  //     ensures SetInvariant()
+  //     ensures removed ==> toSet(old(conteudo)) - {x} == toSet(conteudo)
+  //     ensures !removed ==> toSet(old(conteudo)) == toSet(conteudo)
   //   {
-  //     if (elements[index] == element) {
-  //       elements := elements[..index] + elements[index + 1..]; //linha com erro
-  //       removed := true;
-  //       return;
+  //     var i := 0;
+  //     while i < cont
+  //       invariant 0 <= i <= cont && SetInvariant()
+  //     {
+  //       if conteudo[i] == x {
+  //         conteudo := conteudo[..i] + conteudo[(i+1)..];
+  //         removed := true;
+  //       }
+  //       i := i + 1;
   //     }
-  //     index := index + 1;
+  //     removed := false;
   //   }
-  //   removed := false;
-  // }
 
-  method Contains(element: int) returns (contains: bool)
+
+  method Contains(x: int) returns (contains: bool)
+    requires SetInvariant()
     ensures SetInvariant()
+    //ensures contains <==> x in conteudo //este tem nocodigo do sor mas aqui fala que é indufuciente por ão procar um loop
+    ensures conteudo == old(conteudo)
+
   {
-    var index := 0;
-    while (index < elements.Length)
-      invariant 0 <= index <= elements.Length
-      invariant SetInvariant()
-    {
-      if (elements[index] == element) {
-        contains := true;
-        return;
-      }
-      index := index + 1;
-    }
     contains := false;
-  }
-
-  method Count() returns (count: int)
-    ensures SetInvariant()
-  {
-    count := elements.Length;
-  }
-
-  method IsEmpty() returns (empty: bool)
-    ensures SetInvariant()
-  {
-    empty := elements.Length == 0;
-  }
-
-  method AddAll(arr: array<int>)
-    modifies arr
-    requires arr != null
-    ensures SetInvariant()
-  {
-    var index := 0;
-    while (index < arr.Length)
-      invariant 0 <= index <= arr.Length
+    var i := 0;
+    while i < cont
+      invariant 0 <= i <= cont
       invariant SetInvariant()
     {
-      var element := arr[index];
-      var contains := Contains(element);
-      if (!contains) {
-        var add := Add(element);
+      if elements[i] == x {
+        contains := true;
+        break;
       }
-      index := index + 1;
+      i := i + 1;
     }
   }
+
+
+  method Size() returns (size: nat)
+    requires SetInvariant()
+    ensures SetInvariant()
+    ensures size == cont
+  {
+    size := cont;
+  }
+
+
+  method IsEmpty() returns (isEmpty: bool)
+    requires SetInvariant()
+    ensures SetInvariant()
+    ensures isEmpty <==> cont == 0
+  {
+    isEmpty := cont == 0;
+  }
+
+
+  //   method AddAll(nums: array<int>)
+  //     requires SetInvariant()
+  //     ensures SetInvariant()
+  //     ensures toSet(old(conteudo)) + set x | x in nums[..] == toSet(conteudo)
+  //   {
+  //      for x in nums[..] {
+  //        AddElement(x);
+  //      }
+  //    }
 }
-
-method Main() {
-  var s := new Set();
-  var result: bool;
-  var count: int;
-
-  result := s.IsEmpty();
-  assert result == true;
-
-  result := s.Add(1); // adiciona o 1
-  assert result == true;
-
-  result := s.Add(1); // não pode adicionar o 1 de novo
-  assert result == false;
-
-  // s.Remove(2);
-  // result := s.Remove(3);
-  // assert result == false;
-
-
-  count := s.Count();
-  assert count == 1;
-
-  var elements := new int[3];
-  elements[0] := 2;
-  elements[1] := 3;
-  elements[2] := 4;
-  s.AddAll(elements);
-  count := s.Count();
-  assert count == 4;
-}
-

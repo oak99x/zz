@@ -53,20 +53,22 @@ class Set {
       i := i + 1;
     }
     if added {
-      // Se fizer essa adição em elements o erro SetInvariant() acima possivelmente suma
-      //--------------------------------------------------------------------------------------
-      //elements := elements + [x];
       var newArr := new int[cont + 1];
       
-      var index := 0;
-      while index < cont
-        invariant 0 <= index <= cont
+      var i := 0;
+      var j := 0;
+      while i < elements.Length
+        invariant 0 <= j < newArr.Length
+        invariant 0 <= i < elements.Length
+      assert 0 <= j < newArr.Length;
+      assert 0 <= i < elements.Length;
       {
-        newArr[index] := elements[index];
-        index := index + 1;
+        newArr[j] := elements[i];
+        i := i + 1;
+        j := j +1;
       }
 
-      newArr[cont] := x;
+      newArr[newArr.Length - 1] := x;
       elements := newArr;
       //--------------------------------------------------------------------------------------
       cont := cont + 1;
@@ -75,7 +77,8 @@ class Set {
   }
 
 
-  // method RemoveElement(x: int) returns (removed: bool)
+  // method Remove(x: int) returns (removed: bool)
+  //     modifies this, elements
   //     requires SetInvariant()
   //     ensures SetInvariant()
   //     ensures removed ==> toSet(old(conteudo)) - {x} == toSet(conteudo)

@@ -29,7 +29,7 @@ class Set {
     && elements[..cont] == conteudo
   }
 
-  method AddElement(x: int) returns (added: bool)
+  method Add(x: int) returns (added: bool)
     modifies this, elements
     requires SetInvariant()
     ensures SetInvariant()
@@ -70,32 +70,52 @@ class Set {
 
       newArr[newArr.Length - 1] := x;
       elements := newArr;
-      //--------------------------------------------------------------------------------------
       cont := cont + 1;
       conteudo := conteudo + [x];
     }
   }
 
 
-  // method Remove(x: int) returns (removed: bool)
-  //     modifies this, elements
-  //     requires SetInvariant()
-  //     ensures SetInvariant()
-  //     ensures removed ==> toSet(old(conteudo)) - {x} == toSet(conteudo)
-  //     ensures !removed ==> toSet(old(conteudo)) == toSet(conteudo)
-  //   {
-  //     var i := 0;
-  //     while i < cont
-  //       invariant 0 <= i <= cont && SetInvariant()
-  //     {
-  //       if conteudo[i] == x {
-  //         conteudo := conteudo[..i] + conteudo[(i+1)..];
-  //         removed := true;
-  //       }
-  //       i := i + 1;
-  //     }
-  //     removed := false;
-  //   }
+//  method Remove(x: int) returns (removed: bool)
+//   modifies this, elements
+//   requires SetInvariant()
+//   ensures SetInvariant()
+//   //true se não estava no consunto, false se já estava
+//   //ensures removed <==> x !in toSet(old(conteudo))
+//   //ensures removed ==> toSet(old(conteudo)) - {x} == toSet(conteudo)
+//   ensures !removed ==> toSet(old(conteudo)) == toSet(conteudo)
+// {
+//   removed := false;
+//   var i := 0;
+//   while i < cont
+//     invariant 0 <= i <= cont
+//     invariant SetInvariant()
+//   {
+//     if elements[i] == x {
+//       conteudo := conteudo[..i] + conteudo[(i+1)..];
+//       removed := true;
+//       break;
+//     }
+//     i := i + 1;
+//   }
+
+//   if removed {
+//     var newArr := new int[cont - 1];
+//     var j := 0;
+//     for i := 0 to cont - 1 
+//       invariant 0 <= j <= cont - 1
+//       invariant 0 <= i <= cont - 1
+//     {
+//       if elements[i] != x {
+//         newArr[j] := elements[i];
+//         j := j + 1;
+//       }
+//     }
+//     elements := newArr;
+//     cont := cont - 1;
+//   }
+// }
+
 
 
   method Contains(x: int) returns (contains: bool)
@@ -138,13 +158,39 @@ class Set {
   }
 
 
-  //   method AddAll(nums: array<int>)
-  //     requires SetInvariant()
-  //     ensures SetInvariant()
-  //     ensures toSet(old(conteudo)) + set x | x in nums[..] == toSet(conteudo)
-  //   {
-  //      for x in nums[..] {
-  //        AddElement(x);
-  //      }
-  //    }
+method AddAll(nums: array<int>)
+  requires SetInvariant()
+  modifies this, elements
+  ensures SetInvariant()
+  ensures toSet(old(conteudo)) + toSet(nums[..]) == toSet(conteudo)
+{
+  var i := 0;
+  while i < nums.Length
+    invariant 0 <= i <= nums.Length
+    invariant SetInvariant()
+    invariant toSet(old(conteudo)) + seqSet(nums[..], i) == toSet(conteudo)
+    decreases nums.Length - i
+  {
+    var newArr := new int[cont + 1];
+      
+      var i := 0;
+      var j := 0;
+      while i < elements.Length
+        invariant 0 <= j < newArr.Length
+        invariant 0 <= i < elements.Length
+      assert 0 <= j < newArr.Length;
+      assert 0 <= i < elements.Length;
+      {
+        newArr[j] := elements[i];
+        i := i + 1;
+        j := j +1;
+      }
+
+      newArr[newArr.Length - 1] := nums[i];
+      elements := newArr;
+      cont := cont + 1;
+      conteudo := conteudo + [nums[i]];
+    i := i + 1;
+  }
+}
 }

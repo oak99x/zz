@@ -5,7 +5,7 @@ Implementação do tipo abstrato de dados Conjunto (Set).
 
 #### Alunos:
 #### Enzo Contursi Silveira
-#### Giovanni Masoni Schenato
+#### Gabriel Isdra Moszkowicz
 #### Jeniffer Moreira Borges
 #### Mateus de Carvalho de Freitas
 

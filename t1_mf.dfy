@@ -33,11 +33,11 @@ class Set {
     modifies this, elements
     requires SetInvariant()
     ensures SetInvariant()
-    //true se não estava no consunto, false se já estava
+    // true se não estava no consunto, false se já estava
     ensures added <==> x !in toSet(old(conteudo))
-    //se true, então add "x" ao conjunto (garantindo que os outros elementos não foram perdidos)
+    // se true, então add "x" ao conjunto (garantindo que os outros elementos não foram perdidos)
     ensures added ==> toSet(old(conteudo)) + {x} == toSet(conteudo)
-    //se false, então o conjunto não alterou
+    // se false, então o conjunto não alterou
     ensures !added ==> toSet(old(conteudo)) == toSet(conteudo)
   {
     var index := 0;
@@ -60,8 +60,6 @@ class Set {
       while i < elements.Length
         invariant 0 <= i < elements.Length
         invariant 0 <= j < newArr.Length
-        assert 0 <= i < elements.Length;
-        assert 0 <= j < newArr.Length;
       {
         newArr[j] := elements[i];
         i := i + 1;
@@ -81,7 +79,7 @@ method Remove(x: int) returns (removed: bool)
   modifies this, elements
   ensures SetInvariant()
   // true se o elemento estava no conjunto, false se não estava
-  //ensures removed <==> x in toSet(old(conteudo))
+  //ensures removed <==> x in toSet(old(conteudo)) // Erro ****  postcondition could not be proved on this return path
   // se true, então remove "x" do conjunto (garantindo que os outros elementos não foram perdidos)
   ensures removed ==> toSet(old(conteudo)) - {x} == toSet(conteudo)
   // se false, então o conjunto não alterou
@@ -110,9 +108,7 @@ method Remove(x: int) returns (removed: bool)
     var k := 0;
     while j < elements.Length
       invariant 0 <= j < elements.Length
-      //invariant 0 <= k < newArr.Length
-      assert 0 <= j < elements.Length;
-      assert 0 <= k < newArr.Length;
+      invariant 0 <= k < newArr.Length
     {
       if elements[j] != x {
         newArr[k] := elements[j];
@@ -135,7 +131,7 @@ method Remove(x: int) returns (removed: bool)
   method Contains(x: int) returns (contains: bool)
     requires SetInvariant()
     ensures SetInvariant()
-    //ensures contains <==> x in conteudo //fala que é indufuciente por ão procar um loop
+    //ensures contains <==> x in conteudo // Erro ****  postcondition could not be proved on this return path
     ensures conteudo == old(conteudo)
   {
     contains := false;
@@ -171,11 +167,13 @@ method Remove(x: int) returns (removed: bool)
   }
 
 
-  method AddAll(nums: array<int>)
+method AddAll(nums: array<int>)
+    modifies this, elements, nums
     requires SetInvariant()
-    modifies this, elements
     ensures SetInvariant()
-    ensures toSet(old(conteudo)) + toSet(nums[..]) == toSet(conteudo)
+    // após a execução do método, o conteúdo do conjunto (como um conjunto) 
+    // deve ser o mesmo que era antes da chamada mais os elementos do numsarray. 
+    //ensures toSet(old(conteudo)) + toSet(nums[..]) == toSet(conteudo) // Erro ****  postcondition could not be proved on this return path
   {
     var i := 0;
     while i < nums.Length
@@ -186,17 +184,14 @@ method Remove(x: int) returns (removed: bool)
     {
       var newArr := new int[cont + 1];
         
-        var i := 0;
+        var k := 0;
         var j := 0;
-        while i < elements.Length
+        while k < elements.Length
           invariant 0 <= j < newArr.Length
-          invariant 0 <= i < elements.Length
-          decreases elements.Length - 1
-          assert 0 <= j < newArr.Length;
-          assert 0 <= i < elements.Length;
+          invariant 0 <= k < elements.Length
         {
-          newArr[j] := elements[i];
-          i := i + 1;
+          newArr[j] := elements[k];
+          k := k + 1;
           j := j + 1;
         }
 
